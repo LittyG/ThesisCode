@@ -1,0 +1,174 @@
+import sys
+import psutil
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from tkinter import *
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import random  # Import the random module
+
+# Initialize current_plot variable
+current_plot = ""
+
+# Function to get network usage
+def get_network_usage():
+    net_io = psutil.net_io_counters()
+    sent = net_io.bytes_sent / (1024 * 1024)  # Convert bytes to megabytes
+    received = net_io.bytes_recv / (1024 * 1024)  # Convert bytes to megabytes
+    packets_sent = net_io.packets_sent
+    packets_received = net_io.packets_recv
+    connections = len(psutil.net_connections())
+    interfaces = psutil.net_if_addrs()
+    return sent, received, packets_sent, packets_received, connections, interfaces
+
+# Function to generate dummy DNS activity data
+def generate_dns_activity():
+    return random.randint(0, 10)  # Simulate DNS queries per second
+
+# Function to update plots
+def update_plots(frame):
+    global current_plot  # Add this line
+    if current_plot == "Network Traffic":
+        update_network_traffic_plot(frame)
+    elif current_plot == "Packet Rates":
+        update_packet_rates_plot(frame)
+    elif current_plot == "Active Connections":
+        update_active_connections_plot(frame)
+    elif current_plot == "Data Breaches":
+        update_data_breaches_plot(frame)
+    elif current_plot == "RAM Usage":
+        update_ram_usage_plot(frame)
+    elif current_plot == "Battery Life":
+        update_battery_life_plot(frame)
+    elif current_plot == "DNS Activity":
+        update_dns_activity_plot(frame)
+
+# Function to update Network Traffic plot
+def update_network_traffic_plot(frame):
+    sent, received, _, _, _, _ = get_network_usage()
+    sent_data.append(sent)
+    received_data.append(received)
+    ax1.clear()
+    ax1.plot(sent_data, label='Sent (MB)', color='blue')
+    ax1.plot(received_data, label='Received (MB)', color='green')
+    ax1.set_title('Network Traffic')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Data (MB)')
+    ax1.legend()
+
+# Function to update Packet Rates plot
+def update_packet_rates_plot(frame):
+    _, _, packets_sent, packets_received, _, _ = get_network_usage()
+    packets_sent_data.append(packets_sent)
+    packets_received_data.append(packets_received)
+    ax2.clear()
+    ax2.plot(packets_sent_data, label='Packets Sent', color='orange')
+    ax2.plot(packets_received_data, label='Packets Received', color='red')
+    ax2.set_title('Packet Rates')
+    ax2.set_xlabel('Time')
+    ax2.set_ylabel('Packets')
+    ax2.legend()
+
+# Function to update Active Connections plot
+def update_active_connections_plot(frame):
+    _, _, _, _, connections, _ = get_network_usage()
+    connections_data.append(connections)
+    ax3.clear()
+    ax3.plot(connections_data, label='Active Connections', color='purple')
+    ax3.set_title('Active Connections')
+    ax3.set_xlabel('Time')
+    ax3.set_ylabel('Connections')
+    ax3.legend()
+
+# Function to update Data Breaches plot
+def update_data_breaches_plot(frame):
+    network_breaches.append(1 if frame % 10 == 0 else 0)
+    ax4.clear()
+    ax4.plot(network_breaches, label='Data Breaches', color='red', marker='o')
+    ax4.set_title('Network Data Breaches')
+    ax4.set_xlabel('Time')
+    ax4.set_ylabel('Breaches')
+    ax4.legend()
+
+# Function to update RAM Usage plot
+def update_ram_usage_plot(frame):
+    ram_usage = psutil.virtual_memory().percent
+    ax5.clear()
+    ax5.pie([ram_usage, 100 - ram_usage], labels=['RAM Usage', 'Unused'], colors=['lightcoral', 'lightskyblue'],
+            autopct='%1.1f%%', startangle=140)
+    ax5.set_title('RAM Usage')
+
+# Function to update Battery Life plot
+def update_battery_life_plot(frame):
+    battery = psutil.sensors_battery()
+    if battery:
+        battery_life = battery.percent
+        ax6.clear()
+        ax6.pie([battery_life, 100 - battery_life], labels=['Battery Life', 'Remaining'], colors=['gold', 'lightgray'],
+                autopct='%1.1f%%', startangle=140)
+        ax6.set_title('Battery Life')
+
+# Function to update DNS Activity plot
+def update_dns_activity_plot(frame):
+    dns_activity = generate_dns_activity()
+    ax7.clear()
+    ax7.plot([frame], [dns_activity], 'ro')  # Plot DNS activity data point
+    ax7.set_title('DNS Activity')
+    ax7.set_xlabel('Time')
+    ax7.set_ylabel('Queries')
+
+# Function to handle button clicks
+def button_click(plot_name):
+    global current_plot
+    current_plot = plot_name
+    update_plots(0)  # Reset the plots to initial state
+
+# Initialize data lists
+sent_data = []
+received_data = []
+packets_sent_data = []
+packets_received_data = []
+connections_data = []
+network_breaches = []
+
+# Initialize the tkinter GUI
+root = Tk()
+root.title('Pi-Hole Network Monitor')
+root.geometry('1200x800')
+
+# Create frame for navigation menu
+navigation_frame = Frame(root)
+navigation_frame.pack(side=LEFT, fill=Y)
+
+# Add buttons to the navigation menu
+button1 = Button(navigation_frame, text="Network Traffic", command=lambda: button_click("Network Traffic"))
+button1.pack(fill=X)
+button2 = Button(navigation_frame, text="Packet Rates", command=lambda: button_click("Packet Rates"))
+button2.pack(fill=X)
+button3 = Button(navigation_frame, text="Active Connections", command=lambda: button_click("Active Connections"))
+button3.pack(fill=X)
+button4 = Button(navigation_frame, text="Data Breaches", command=lambda: button_click("Data Breaches"))
+button4.pack(fill=X)
+button5 = Button(navigation_frame, text="RAM Usage", command=lambda: button_click("RAM Usage"))
+button5.pack(fill=X)
+button6 = Button(navigation_frame, text="Battery Life", command=lambda: button_click("Battery Life"))
+button6.pack(fill=X)
+button7 = Button(navigation_frame, text="DNS Activity", command=lambda: button_click("DNS Activity"))
+button7.pack(fill=X)
+
+# Initialize matplotlib figure and axis
+fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6), (ax7, _)) = plt.subplots(4, 2, figsize=(12, 8))
+
+# Function to start animation
+def start_animation():
+    ani = animation.FuncAnimation(fig, update_plots, interval=1000, save_count=100, cache_frame_data=False)
+    canvas.draw()
+
+# Embed the plot into tkinter GUI
+canvas = FigureCanvasTkAgg(fig, master=root)
+canvas.get_tk_widget().pack(side=RIGHT, fill=BOTH, expand=1)
+
+# Call start_animation() after the GUI has been initialized
+start_animation()
+
+# Run the tkinter event loop
+root.mainloop()
